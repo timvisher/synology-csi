@@ -5,10 +5,10 @@ metadata:
   # annotations:
   #   storageclass.kubernetes.io/is-default-class: "true"
 provisioner: csi.san.synology.com
-# if all params are empty, synology CSI will choose an available location to create volume
-# parameters:
-#   dsm: '1.1.1.1'
-#   location: '/volume1'
-#   fsType: 'ext4'
+parameters:
+  dsm: '192.168.1.19'
+  location: '/volume1'
+  csi.storage.k8s.io/fstype: 'btrfs'
+  formatOptions: '--nodiscard'
 reclaimPolicy: Retain
 allowVolumeExpansion: true
