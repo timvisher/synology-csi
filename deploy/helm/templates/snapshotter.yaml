@@ -17,6 +17,9 @@ rules:
   - apiGroups: [ "" ]
     resources: [ "events" ]
     verbs: [ "list", "watch", "create", "update", "patch" ]
+  - apiGroups: [ "coordination.k8s.io" ]
+    resources: [ "leases" ]
+    verbs: [ "get", "watch", "list", "delete", "update", "create" ]
   - apiGroups: [ "snapshot.storage.k8s.io" ]
     resources: [ "volumesnapshotclasses" ]
     verbs: [ "get", "list", "watch" ]
@@ -25,6 +28,12 @@ rules:
     verbs: [ "create", "get", "list", "watch", "update", "delete" ]
   - apiGroups: [ "snapshot.storage.k8s.io" ]
     resources: [ "volumesnapshotcontents/status" ]
+    verbs: [ "update" ]
+  - apiGroups: [ "snapshot.storage.k8s.io" ]
+    resources: [ "volumesnapshots" ]
+    verbs: [ "get", "list", "watch", "update" ]
+  - apiGroups: [ "snapshot.storage.k8s.io" ]
+    resources: [ "volumesnapshots/status" ]
     verbs: [ "update" ]
 
 ---
@@ -72,6 +81,7 @@ spec:
           args:
             - --csi-address=$(ADDRESS)
             - --v=5
+            - --leader-election=true
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
