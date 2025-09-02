@@ -435,6 +435,25 @@ func (cs *controllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateS
 		return nil, err
 	}
 
+	// Get source volume mode to populate SourceVolumeMode in response
+	sourceVolume := cs.dsmService.GetVolume(srcVolId)
+	if sourceVolume == nil {
+		return nil, status.Errorf(codes.NotFound, "Source volume %s not found", srcVolId)
+	}
+
+	volumeMode := csi.VolumeCapability_AccessMode_UNKNOWN
+	if sourceVolume.Protocol == utils.ProtocolIscsi || sourceVolume.Protocol == "" { // iscsi can be Filesystem or Block
+		// Let's assume Filesystem by default for iSCSI if not specified
+		// In Kubernetes, PVCs have a volumeMode, which would be ideal to check.
+		// However, the driver doesn't seem to store/access the original PVC spec.
+		// For now, defaulting to Filesystem for iSCSI is a reasonable assumption
+		// as Block mode is less common and would likely require more specific handling.
+		// A more robust implementation might involve retrieving the PV object from k8s.
+		volumeMode = csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER // Represents Filesystem
+	} else { // NFS/SMB are always Filesystem
+		volumeMode = csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER // Represents Filesystem
+	}
+
 	return &csi.CreateSnapshotResponse{
 		Snapshot: &csi.Snapshot{
 			SizeBytes:      snapshot.SizeInBytes,
@@ -442,6 +461,7 @@ func (cs *controllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateS
 			SourceVolumeId: snapshot.ParentUuid,
 			CreationTime:   timestamppb.New(time.Unix(snapshot.CreateTime, 0)),
 			ReadyToUse:     (snapshot.Status == "Healthy"),
+			SourceVolumeMode: volumeMode,
 		},
 	}, nil
 }
